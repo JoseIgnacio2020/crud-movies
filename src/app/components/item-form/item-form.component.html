@@ -1,1 +1,63 @@
-<p>item-form works!</p>
+<h2 mat-dialog-title>{{ mode === 'create' ? 'Nuevo' : 'Editar' }}</h2>
+
+<mat-dialog-content>
+  <form [formGroup]="form" class="item-form" (ngSubmit)="save()">
+
+    <mat-form-field appearance="fill" class="full">
+      <mat-label>Título</mat-label>
+      <input matInput formControlName="title" />
+      <mat-error *ngIf="titleControl?.hasError('required')">El título es obligatorio</mat-error>
+      <mat-error *ngIf="titleControl?.hasError('minlength')">Mínimo 2 caracteres</mat-error>
+    </mat-form-field>
+
+    <div class="row-two">
+      <mat-form-field appearance="fill" class="half">
+        <mat-label>Año</mat-label>
+        <input matInput formControlName="year" placeholder="YYYY" />
+        <mat-error *ngIf="yearControl?.hasError('required')">El año es obligatorio</mat-error>
+        <mat-error *ngIf="yearControl?.hasError('pattern')">Formato inválido (ej. 2023)</mat-error>
+        <mat-error *ngIf="yearControl?.hasError('yearOutOfRange')">
+          Año fuera de rango ({{ yearControl?.getError('yearOutOfRange')?.min }} - {{ yearControl?.getError('yearOutOfRange')?.max }})
+        </mat-error>
+      </mat-form-field>
+
+      <mat-form-field appearance="fill" class="half">
+        <mat-label>Poster (URL)</mat-label>
+        <input matInput formControlName="poster" placeholder="https://..." />
+        <mat-hint>URL debe terminar en .jpg .png .webp .gif</mat-hint>
+        <mat-error *ngIf="posterControl?.hasError('required')">La URL del poster es obligatoria</mat-error>
+        <mat-error *ngIf="posterControl?.hasError('pattern')">La URL debe ser una imagen válida (jpg/png/webp/gif)</mat-error>
+      </mat-form-field>
+    </div>
+
+    <!-- Preview -->
+    <div class="poster-preview" *ngIf="posterControl?.value">
+      <img [src]="posterControl?.value" [alt]="titleControl?.value || 'poster preview'" loading="lazy">
+    </div>
+
+    <mat-form-field appearance="fill" class="full">
+      <mat-label>Sinopsis (opcional)</mat-label>
+      <textarea matInput formControlName="overview" rows="4"></textarea>
+      <mat-hint align="end">{{ overviewControl?.value?.length || 0 }}/2000</mat-hint>
+    </mat-form-field>
+
+  </form>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancel()">Cancelar</button>
+  <button mat-flat-button color="primary" (click)="save()" [disabled]="form.invalid">
+    {{ mode === 'create' ? 'Crear' : 'Guardar' }}
+  </button>
+</mat-dialog-actions>
+
+<style>
+  .item-form { display: flex; flex-direction: column; gap: 12px; min-width: 320px; }
+  .full { width: 100%; }
+  .row-two { display: flex; gap: 12px; }
+  .half { width: 50%; }
+  .poster-preview img { max-width: 260px; width: 100%; height: auto; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.4); display:block; margin-top:8px; }
+  @media (max-width: 520px) {
+    .half, .row-two { width: 100%; display: block; }
+  }
+</style>

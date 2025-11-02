@@ -3,6 +3,8 @@ import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
 import { MatSort } from '@angular/material/sort';
 import { MatDialog } from '@angular/material/dialog';
+import { MatSnackBar } from '@angular/material/snack-bar';
+
 import { ApiService } from '../../services/api.service';
 import { LocalDataService } from '../../services/local-data.service';
 import { ItemFormComponent } from '../item-form/item-form.component';
@@ -26,27 +28,32 @@ export class ItemsListComponent implements OnInit, AfterViewInit {
   constructor(
     private api: ApiService,
     private storage: LocalDataService,
-    private dialog: MatDialog
-  ) { }
+    private dialog: MatDialog,
+    private snack: MatSnackBar
+  ) {}
 
   ngOnInit() {
-    // inicializa siempre desde la API al cargar la app (sobrescribe work)
-    this.api.initFromSearch('marvel', 1).subscribe({
-      next: (movies: Movie[]) => {
-        this.storage.resetFromApi(this.apiName, movies);
-        this.loadWork();
-      },
-      error: (err) => {
-        // si falla, cargar lo que haya en localStorage (fallback)
-        this.loadWork();
-        console.error('Error inicializando desde API', err);
-      }
-    });
+    this.initFromApi();
   }
 
   ngAfterViewInit() {
     this.dataSource.paginator = this.paginator;
     this.dataSource.sort = this.sort;
+  }
+
+  private initFromApi(query = 'marvel') {
+    this.api.initFromSearch(query, 1).subscribe({
+      next: (movies: Movie[]) => {
+        this.storage.resetFromApi(this.apiName, movies);
+        this.loadWork();
+      },
+      error: (err) => {
+        console.error('Error inicializando desde API', err);
+        // fallback si existe init previo
+        this.loadWork();
+        this.snack.open('No se pudo cargar datos desde TMDb. Usando datos locales si existen.', 'Cerrar', { duration: 4000 });
+      }
+    });
   }
 
   loadWork() {
@@ -58,65 +65,71 @@ export class ItemsListComponent implements OnInit, AfterViewInit {
     const title = (this.filterTitle || '').trim().toLowerCase();
     const year = (this.filterYear || '').trim();
 
-    // Aseguramos el tipo de predicate que siempre retorna boolean
     this.dataSource.filterPredicate = (data: Movie, _filter: string): boolean => {
       const matchesTitle = !title || (data.title || '').toLowerCase().includes(title);
-      const matchesYear = !year || (data.year ? data.year.includes(year) : false);
-      return !!(matchesTitle && matchesYear); // fuerza boolean
+      const matchesYear  = !year  || (data.year ? data.year.includes(year) : false);
+      return !!(matchesTitle && matchesYear);
     };
 
-    // Disparar el filtro: el valor concreto no importa, solo provoca el re-evaluado
-    // Usamos un string constante para evitar confusiones con tipos
+    // disparar re-evaluación
     this.dataSource.filter = 'applyFilter' + Date.now().toString();
-
-    if (this.dataSource.paginator) {
-      this.dataSource.paginator.firstPage();
-    }
+    if (this.dataSource.paginator) this.dataSource.paginator.firstPage();
   }
+
   openCreate() {
     const ref = this.dialog.open(ItemFormComponent, {
-      width: '500px',
+      width: '520px',
       data: { mode: 'create' }
     });
 
     ref.afterClosed().subscribe((result: Movie | undefined) => {
       if (result) {
-        this.storage.create(this.apiName, result);
-        this.loadWork();
+        try {
+          this.storage.create(this.apiName, result);
+          this.loadWork();
+          this.snack.open(`"${result.title}" creado.`, 'Cerrar', { duration: 3000 });
+        } catch (e) {
+          console.error('Error creando item', e);
+          this.snack.open('Error al crear el elemento', 'Cerrar', { duration: 3000 });
+        }
       }
     });
   }
 
   openEdit(item: Movie) {
     const ref = this.dialog.open(ItemFormComponent, {
-      width: '500px',
-      data: { mode: 'edit', item: { ...item } } 
+      width: '520px',
+      data: { mode: 'edit', item: { ...item } } // pasar copia
     });
 
     ref.afterClosed().subscribe((result: Movie | undefined) => {
       if (result) {
-        this.storage.update(this.apiName, result.id, result);
-        this.loadWork();
+        try {
+          // result debe traer id
+          this.storage.update(this.apiName, result.id, result);
+          this.loadWork();
+          this.snack.open(`"${result.title}" actualizado.`, 'Cerrar', { duration: 3000 });
+        } catch (e) {
+          console.error('Error actualizando item', e);
+          this.snack.open('Error al actualizar el elemento', 'Cerrar', { duration: 3000 });
+        }
       }
     });
   }
 
   delete(item: Movie) {
-    if (!confirm(`Eliminar "${item.title}"?`)) return;
-    this.storage.delete(this.apiName, item.id);
-    this.loadWork();
+    if (!confirm(`¿Eliminar "${item.title}"?`)) return;
+    try {
+      this.storage.delete(this.apiName, item.id);
+      this.loadWork();
+      this.snack.open(`"${item.title}" eliminado.`, 'Cerrar', { duration: 2500 });
+    } catch (e) {
+      console.error('Error eliminando', e);
+      this.snack.open('Error al eliminar', 'Cerrar', { duration: 3000 });
+    }
   }
 
   resetFromApi() {
-    // volver a pedir API y sobrescribir trabajo
-    this.api.initFromSearch('marvel', 1).subscribe({
-      next: movies => {
-        this.storage.resetFromApi(this.apiName, movies);
-        this.loadWork();
-      },
-      error: (err) => {
-        console.error('No se pudo resetear desde API', err);
-      }
-    });
+    this.initFromApi(); // volver a llamar y sobrescribir
   }
 }

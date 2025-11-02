@@ -1,4 +1,59 @@
-/* You can add global styles to this file, and also import other style files */
+@use '@angular/material' as mat;
 
-html, body { height: 100%; }
-body { margin: 0; font-family: Roboto, "Helvetica Neue", sans-serif; }
+/*Global imports (fuentes, variables, helpers) */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+/*Paletas y tema (Material theming) */
+$cinema-primary: mat.define-palette(mat.$indigo-palette, 800, 900, 700);
+$cinema-accent: mat.define-palette(mat.$orange-palette, A200, A100, A400);
+$cinema-warn: mat.define-palette(mat.$red-palette);
+
+$cinema-dark-theme: mat.define-dark-theme((
+  color: (
+    primary: $cinema-primary,
+    accent: $cinema-accent,
+    warn: $cinema-warn
+  ),
+  typography: mat.define-typography-config()
+));
+
+@include mat.core();
+@include mat.all-component-themes($cinema-dark-theme);
+
+/* Global CSS (after @use/@import/@include) */
+*,
+*::before,
+*::after { box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  font-family: Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: #0b0f17; /* fondo oscuro cine */
+  color: #fff;
+}
+
+/* Helpers */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px;
+}
+
+/* Toolbar look */
+.mat-toolbar {
+  background: linear-gradient(90deg, rgba(7,10,14,0.95), rgba(13,17,23,0.95));
+  color: #fff;
+}
+
+/* Visual tweaks */
+.mat-elevation-z2 {
+  background: transparent;
+}
+
+/* Typography */
+h1, h2, h3 { font-weight: 700; letter-spacing: 0.4px; }
+
+/* Scrollbar (subtle) */
+::-webkit-scrollbar { height: 10px; width: 10px; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 8px; }

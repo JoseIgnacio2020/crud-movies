@@ -1,0 +1,107 @@
+/* ensure responsive behavior */
+:host {
+  display: block;
+  padding: 8px;
+  box-sizing: border-box;
+}
+
+/* toolbar */
+.toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  padding: 8px 0;
+}
+
+.filters {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+.filter-field { min-width: 160px; width: 220px; }
+
+.toolbar-actions { display: flex; gap: 8px; align-items: center; }
+
+/* table container */
+.table-wrap { width: 100%; overflow-x: auto; }
+
+/* make table rows look like cinema cards */
+.responsive-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0 12px;
+}
+
+/* header */
+.header-row th.mat-header-cell {
+  background: rgba(255,255,255,0.03);
+  padding: 12px 16px;
+  color: rgba(255,255,255,0.9);
+  font-weight: 600;
+}
+
+/* data row */
+.data-row { background: rgba(255,255,255,0.02); border-radius: 8px; }
+.data-row .mat-cell, .data-row td.mat-cell {
+  padding: 12px 16px;
+  vertical-align: middle;
+  border-bottom: none;
+}
+
+/* poster */
+.cell-poster { width: 120px; } /* larger on desktop too */
+.poster-img {
+  width: 100%;
+  max-width: 180px; /* fallback */
+  height: auto;
+  border-radius: 6px;
+  display: block;
+  object-fit: cover;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+}
+
+/* title + overview */
+.title { font-weight: 700; font-size: 1rem; color: #fff; }
+.overview { font-size: 0.92rem; color: rgba(255,255,255,0.75); }
+
+/* actions */
+.cell-actions { display:flex; gap:10px; justify-content:flex-end; align-items:center; }
+.action-btn {
+  padding: 8px 12px;
+  min-width: 88px;
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+}
+
+/* paginator */
+.paginator-wrap { margin-top: 12px; display:flex; justify-content:flex-end; }
+
+/* SMALL SCREENS: mobile-specific polish */
+@media (max-width: 420px) {
+  .filter-field { width: 100%; min-width: unset; }
+  .filters { width: 100%; margin-bottom: 8px; }
+
+  /* stack rows as cards */
+  .responsive-table, .responsive-table tbody, .responsive-table tr, .responsive-table td, .responsive-table th {
+    display:block;
+  }
+  .header-row { display: none; }
+  .data-row {
+    margin-bottom: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+    border: 1px solid rgba(255,255,255,0.03);
+  }
+  .data-row .mat-cell { display:flex; padding: 8px 0; border-bottom:none; }
+  .cell-poster { flex: 0 0 34%; max-width: 34%; margin-right: 8px; }
+  .poster-img { width: 100%; max-width: none; }
+  .cell-title { flex: 1 1 auto; padding-right: 8px; }
+  .cell-actions { justify-content:flex-start; gap:8px; margin-top:8px; flex-wrap:wrap; }
+  .action-btn { min-width: 80px; padding: 8px; font-size: 0.9rem; }
+}

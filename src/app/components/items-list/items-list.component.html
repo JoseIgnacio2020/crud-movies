@@ -1,1 +1,85 @@
-<p>items-list works!</p>
+<!-- Toolbar / filtros -->
+<div class="toolbar">
+  <div class="filters">
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Buscar por título</mat-label>
+      <input matInput [(ngModel)]="filterTitle" (ngModelChange)="applyFilters()" placeholder="título">
+    </mat-form-field>
+
+    <mat-form-field appearance="outline" class="filter-field">
+      <mat-label>Año</mat-label>
+      <input matInput [(ngModel)]="filterYear" (ngModelChange)="applyFilters()" placeholder="YYYY">
+    </mat-form-field>
+  </div>
+
+  <div class="toolbar-actions">
+    <button mat-flat-button color="primary" (click)="openCreate()">
+      <mat-icon aria-hidden="false" aria-label="Nuevo">add</mat-icon>
+      <span class="btn-text">Nuevo</span>
+    </button>
+
+    <button mat-stroked-button (click)="resetFromApi()">
+      <mat-icon aria-hidden="false" aria-label="Restaurar">restore</mat-icon>
+      <span class="btn-text">Restaurar inicial</span>
+    </button>
+  </div>
+</div>
+
+<!-- Table (desktop) -->
+<div class="table-wrap">
+  <table mat-table [dataSource]="dataSource" matSort class="mat-elevation-z2 responsive-table">
+
+    <!-- Poster -->
+    <ng-container matColumnDef="poster">
+      <th mat-header-cell *matHeaderCellDef></th>
+      <td mat-cell *matCellDef="let e" class="cell-poster">
+        <img *ngIf="e.posterUrls" class="poster-img" [src]="e.posterUrls.w500" [attr.srcset]="
+       (e.posterUrls.w342 ? e.posterUrls.w342 + ' 342w, ' : '') +
+       (e.posterUrls.w500 ? e.posterUrls.w500 + ' 500w, ' : '') +
+       (e.posterUrls.w780 ? e.posterUrls.w780 + ' 780w' : '')"
+          sizes="(max-width: 420px) 120px, (max-width: 800px) 140px, 180px" [alt]="e.title">
+      </td>
+    </ng-container>
+
+    <!-- Title -->
+    <ng-container matColumnDef="title">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Título</th>
+      <td mat-cell *matCellDef="let e" class="cell-title">
+        <div class="title-wrap">
+          <div class="title">{{ e.title }}</div>
+          <div class="overview" *ngIf="e.overview">{{ e.overview }}</div>
+        </div>
+      </td>
+    </ng-container>
+
+    <!-- Year -->
+    <ng-container matColumnDef="year">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Año</th>
+      <td mat-cell *matCellDef="let e" class="cell-year">{{ e.year }}</td>
+    </ng-container>
+
+    <!-- Actions -->
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Acciones</th>
+      <td mat-cell *matCellDef="let e" class="cell-actions">
+        <button mat-stroked-button color="accent" class="action-btn" (click)="openEdit(e)">
+          <mat-icon>edit</mat-icon>
+          <span class="btn-text">Editar</span>
+        </button>
+
+        <button mat-stroked-button color="warn" class="action-btn" (click)="delete(e)">
+          <mat-icon>delete</mat-icon>
+          <span class="btn-text">Eliminar</span>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns" class="header-row"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;" class="data-row"></tr>
+  </table>
+</div>
+
+<!-- Paginator -->
+<div class="paginator-wrap">
+  <mat-paginator [pageSize]="10" [pageSizeOptions]="[5,10,20]"></mat-paginator>
+</div>

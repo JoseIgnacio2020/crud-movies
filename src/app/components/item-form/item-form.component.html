@@ -3,6 +3,7 @@
 <mat-dialog-content>
   <form [formGroup]="form" class="item-form" (ngSubmit)="save()">
 
+    <!-- Título -->
     <mat-form-field appearance="fill" class="full">
       <mat-label>Título</mat-label>
       <input matInput formControlName="title" />
@@ -11,30 +12,66 @@
     </mat-form-field>
 
     <div class="row-two">
+      <!-- Año -->
       <mat-form-field appearance="fill" class="half">
         <mat-label>Año</mat-label>
-        <input matInput formControlName="year" placeholder="YYYY" />
+        <input
+          matInput
+          type="number"
+          formControlName="year"
+          placeholder="Ej: 1995"
+          min="1888"
+          [max]="maxYear"
+          inputmode="numeric"
+          step="1"
+        />
         <mat-error *ngIf="yearControl?.hasError('required')">El año es obligatorio</mat-error>
-        <mat-error *ngIf="yearControl?.hasError('pattern')">Formato inválido (ej. 2023)</mat-error>
-        <mat-error *ngIf="yearControl?.hasError('yearOutOfRange')">
-          Año fuera de rango ({{ yearControl?.getError('yearOutOfRange')?.min }} - {{ yearControl?.getError('yearOutOfRange')?.max }})
+        <mat-error *ngIf="yearControl?.hasError('min') || yearControl?.hasError('max')">
+          Ingresa un año entre 1888 y {{ maxYear }}
         </mat-error>
+        <mat-error *ngIf="yearControl?.hasError('notInteger')">El año debe ser un número entero</mat-error>
+        <mat-error *ngIf="yearControl?.hasError('fourDigits')">El año debe tener 4 dígitos (ej. 2024)</mat-error>
       </mat-form-field>
 
-      <mat-form-field appearance="fill" class="half">
-        <mat-label>Poster (URL)</mat-label>
-        <input matInput formControlName="poster" placeholder="https://..." />
-        <mat-hint>URL debe terminar en .jpg .png .webp .gif</mat-hint>
-        <mat-error *ngIf="posterControl?.hasError('required')">La URL del poster es obligatoria</mat-error>
-        <mat-error *ngIf="posterControl?.hasError('pattern')">La URL debe ser una imagen válida (jpg/png/webp/gif)</mat-error>
-      </mat-form-field>
+      <!-- Poster -->
+      <div class="half poster-methods">
+        <mat-label class="method-label">Poster (imagen)</mat-label>
+
+        <!-- Toggle (usa formControlName para el control interno _posterMode) -->
+        <mat-button-toggle-group formControlName="_posterMode" aria-label="Elegir método poster">
+          <mat-button-toggle value="url">URL</mat-button-toggle>
+          <mat-button-toggle value="upload">Subir</mat-button-toggle>
+        </mat-button-toggle-group>
+
+        <!-- Input URL -->
+        <mat-form-field appearance="fill" class="full" *ngIf="posterModeControl?.value === 'url'">
+          <mat-label>Poster (URL)</mat-label>
+          <input matInput formControlName="poster" placeholder="https://... (termina en .jpg .png ...)" type="url" />
+          <mat-hint>Usa la URL directa a la imagen (o sube archivo)</mat-hint>
+          <mat-error *ngIf="posterControl?.hasError('required')">La URL del poster es obligatoria</mat-error>
+          <mat-error *ngIf="posterControl?.hasError('pattern')">La URL debe ser una imagen válida (jpg/png/webp/gif) o data:image</mat-error>
+        </mat-form-field>
+
+        <!-- Upload -->
+        <div class="upload-wrap" *ngIf="posterModeControl?.value === 'upload'">
+          <input #fileInput type="file" accept="image/*" (change)="onFileSelected($event)" hidden>
+          <button mat-stroked-button type="button" (click)="fileInput.click()">
+            <mat-icon>file_upload</mat-icon> Seleccionar archivo
+          </button>
+
+          <div class="file-info" *ngIf="fileErrorMessage" style="color: #ffbaba;">{{ fileErrorMessage }}</div>
+          <mat-error *ngIf="posterControl?.hasError('required') && !fileErrorMessage">Seleccione o pegue una imagen</mat-error>
+        </div>
+      </div>
     </div>
 
     <!-- Preview -->
     <div class="poster-preview" *ngIf="posterControl?.value">
-      <img [src]="posterControl?.value" [alt]="titleControl?.value || 'poster preview'" loading="lazy">
+      <img [src]="posterControl?.value" [alt]="titleControl?.value || 'poster preview'" loading="lazy" (error)="onImgError()">
+      <div *ngIf="imgLoadError" class="img-error">No se pudo cargar la imagen. Intente URL directa o subir un archivo.</div>
     </div>
 
+    <!-- Sinopsis -->
     <mat-form-field appearance="fill" class="full">
       <mat-label>Sinopsis (opcional)</mat-label>
       <textarea matInput formControlName="overview" rows="4"></textarea>
@@ -52,12 +89,13 @@
 </mat-dialog-actions>
 
 <style>
-  .item-form { display: flex; flex-direction: column; gap: 12px; min-width: 320px; }
+  .item-form { display:flex; flex-direction: column; gap: 12px; min-width: 320px; }
   .full { width: 100%; }
-  .row-two { display: flex; gap: 12px; }
+  .row-two { display:flex; gap: 12px; align-items:flex-start; }
   .half { width: 50%; }
-  .poster-preview img { max-width: 260px; width: 100%; height: auto; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.4); display:block; margin-top:8px; }
-  @media (max-width: 520px) {
-    .half, .row-two { width: 100%; display: block; }
-  }
+  .poster-methods { display:flex; flex-direction: column; gap: 8px; }
+  .poster-preview img { max-width: 320px; width: 100%; height: auto; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.4); display:block; margin-top:8px; }
+  .img-error { color: #ffcdd2; margin-top: 6px; font-size: 0.95rem; }
+  .upload-wrap { display:flex; flex-direction: column; gap:8px; }
+  @media (max-width: 520px) { .half, .row-two { width: 100%; display:block; } }
 </style>

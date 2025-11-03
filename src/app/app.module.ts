@@ -16,6 +16,7 @@ import { MatDialogModule } from '@angular/material/dialog';
 import { MatIconModule } from '@angular/material/icon';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
 
 import { AppComponent } from './app.component';
 import { ItemsListComponent } from './components/items-list/items-list.component';
@@ -23,14 +24,17 @@ import { ItemFormComponent } from './components/item-form/item-form.component';
 import { ItemDetailComponent } from './components/item-detail/item-detail.component';
 
 /* Si tienes rutas en app-routing.module, impórtalo aquí */
-import { AppRoutingModule } from './app-routing.module'; 
+import { AppRoutingModule } from './app-routing.module';
+
+import { ConfirmDialogComponent } from './components/confirm-dialog/confirm-dialog.component'; 
 
 @NgModule({
   declarations: [
     AppComponent,
     ItemsListComponent,
     ItemFormComponent,
-    ItemDetailComponent
+    ItemDetailComponent,
+    ConfirmDialogComponent
   ],
   imports: [
     BrowserModule,
@@ -49,7 +53,8 @@ import { AppRoutingModule } from './app-routing.module';
     MatIconModule,
     MatToolbarModule,
     MatSnackBarModule,
-    AppRoutingModule
+    AppRoutingModule,
+    MatButtonToggleModule
   ],
   providers: [],
   bootstrap: [AppComponent]

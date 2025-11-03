@@ -1,3 +1,4 @@
+// src/app/components/items-list/items-list.component.ts
 import { Component, OnInit, ViewChild, AfterViewInit } from '@angular/core';
 import { MatTableDataSource } from '@angular/material/table';
 import { MatPaginator } from '@angular/material/paginator';
@@ -8,6 +9,7 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { ApiService } from '../../services/api.service';
 import { LocalDataService } from '../../services/local-data.service';
 import { ItemFormComponent } from '../item-form/item-form.component';
+import { ConfirmDialogComponent } from '../confirm-dialog/confirm-dialog.component';
 import { Movie } from '../../models/movie';
 
 @Component({
@@ -49,7 +51,6 @@ export class ItemsListComponent implements OnInit, AfterViewInit {
       },
       error: (err) => {
         console.error('Error inicializando desde API', err);
-        // fallback si existe init previo
         this.loadWork();
         this.snack.open('No se pudo cargar datos desde TMDb. Usando datos locales si existen.', 'Cerrar', { duration: 4000 });
       }
@@ -71,7 +72,6 @@ export class ItemsListComponent implements OnInit, AfterViewInit {
       return !!(matchesTitle && matchesYear);
     };
 
-    // disparar re-evaluación
     this.dataSource.filter = 'applyFilter' + Date.now().toString();
     if (this.dataSource.paginator) this.dataSource.paginator.firstPage();
   }
@@ -83,53 +83,108 @@ export class ItemsListComponent implements OnInit, AfterViewInit {
     });
 
     ref.afterClosed().subscribe((result: Movie | undefined) => {
-      if (result) {
-        try {
-          this.storage.create(this.apiName, result);
-          this.loadWork();
-          this.snack.open(`"${result.title}" creado.`, 'Cerrar', { duration: 3000 });
-        } catch (e) {
-          console.error('Error creando item', e);
-          this.snack.open('Error al crear el elemento', 'Cerrar', { duration: 3000 });
-        }
+      if (!result) return;
+
+      try {
+        // create() assigns id if not present and unshifts into array
+        this.storage.create(this.apiName, result);
+        this.loadWork();
+
+        // Get created item (assume create unshifted the new item to index 0)
+        const created = this.storage.getWork(this.apiName)[0];
+
+        const snackRef = this.snack.open(`"${created.title}" creado.`, 'Deshacer', { duration: 6000 });
+        snackRef.onAction().subscribe(() => {
+          try {
+            this.storage.delete(this.apiName, created.id);
+            this.loadWork();
+            this.snack.open('Creación deshecha.', 'Cerrar', { duration: 2500 });
+          } catch (e) {
+            console.error('Error al deshacer creación', e);
+            this.snack.open('No se pudo deshacer.', 'Cerrar', { duration: 2500 });
+          }
+        });
+      } catch (e) {
+        console.error('Error creando item', e);
+        this.snack.open('Error al crear el elemento', 'Cerrar', { duration: 3000 });
       }
     });
   }
 
   openEdit(item: Movie) {
+    // Guardar snapshot para posible undo
+    const original = { ...item };
+
     const ref = this.dialog.open(ItemFormComponent, {
       width: '520px',
       data: { mode: 'edit', item: { ...item } } // pasar copia
     });
 
     ref.afterClosed().subscribe((result: Movie | undefined) => {
-      if (result) {
-        try {
-          // result debe traer id
-          this.storage.update(this.apiName, result.id, result);
-          this.loadWork();
-          this.snack.open(`"${result.title}" actualizado.`, 'Cerrar', { duration: 3000 });
-        } catch (e) {
-          console.error('Error actualizando item', e);
-          this.snack.open('Error al actualizar el elemento', 'Cerrar', { duration: 3000 });
-        }
+      if (!result) return;
+
+      try {
+        this.storage.update(this.apiName, result.id, result);
+        this.loadWork();
+
+        const snackRef = this.snack.open(`"${result.title}" actualizado.`, 'Deshacer', { duration: 6000 });
+        snackRef.onAction().subscribe(() => {
+          try {
+            // restaurar estado original (full object)
+            this.storage.update(this.apiName, original.id, original);
+            this.loadWork();
+            this.snack.open('Cambios deshechos.', 'Cerrar', { duration: 2500 });
+          } catch (e) {
+            console.error('Error al deshacer edición', e);
+            this.snack.open('No se pudo deshacer.', 'Cerrar', { duration: 2500 });
+          }
+        });
+      } catch (e) {
+        console.error('Error actualizando item', e);
+        this.snack.open('Error al actualizar el elemento', 'Cerrar', { duration: 3000 });
       }
     });
   }
 
   delete(item: Movie) {
-    if (!confirm(`¿Eliminar "${item.title}"?`)) return;
-    try {
-      this.storage.delete(this.apiName, item.id);
-      this.loadWork();
-      this.snack.open(`"${item.title}" eliminado.`, 'Cerrar', { duration: 2500 });
-    } catch (e) {
-      console.error('Error eliminando', e);
-      this.snack.open('Error al eliminar', 'Cerrar', { duration: 3000 });
-    }
+    const dialogRef = this.dialog.open(ConfirmDialogComponent, {
+      width: '420px',
+      data: {
+        title: 'Eliminar película',
+        message: `¿Estás seguro de eliminar la película <strong>${item.title}</strong>? `,
+        confirmText: 'Eliminar',
+        cancelText: 'Cancelar',
+        danger: true
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(confirmed => {
+      if (!confirmed) return;
+
+      const deletedItem = { ...item };
+      try {
+        this.storage.delete(this.apiName, item.id);
+        this.loadWork();
+
+        const snackRef = this.snack.open(`"${item.title}" eliminado.`, 'Deshacer', { duration: 6000 });
+        snackRef.onAction().subscribe(() => {
+          try {
+            this.storage.create(this.apiName, deletedItem);
+            this.loadWork();
+            this.snack.open('Eliminación deshecha.', 'Cerrar', { duration: 2500 });
+          } catch (e) {
+            console.error('Error al deshacer eliminación', e);
+            this.snack.open('No se pudo deshacer.', 'Cerrar', { duration: 2500 });
+          }
+        });
+      } catch (e) {
+        console.error('Error eliminando', e);
+        this.snack.open('Error al eliminar', 'Cerrar', { duration: 3000 });
+      }
+    });
   }
 
   resetFromApi() {
-    this.initFromApi(); // volver a llamar y sobrescribir
+    this.initFromApi();
   }
 }
